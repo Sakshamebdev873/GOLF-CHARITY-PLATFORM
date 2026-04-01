@@ -40,25 +40,40 @@ export default function AuthModal() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      if (authModalView === "login") {
-        const result = await login({ email, password }).unwrap();
-        dispatch(setCredentials({ user: result.data.user, token: result.data.token }));
-        toast.success("Welcome back!");
-        handleClose();
-        router.push(result.data.user.role === "ADMIN" ? "/admin" : "/dashboard");
-      } else {
-        if (!firstName || !lastName) { toast.error("Please fill in all fields"); return; }
-        await register({ email, password, firstName, lastName }).unwrap();
-        toast.success("Check your email to verify your account!");
-        handleClose();
-        router.push(`/check-email?email=${encodeURIComponent(email)}`);
+  e.preventDefault();
+
+  try {
+    if (authModalView === "login") {
+      const result = await login({ email, password }).unwrap();
+      dispatch(setCredentials({ user: result.data.user, token: result.data.token }));
+      toast.success("Welcome back!");
+      handleClose();
+      router.push(result.data.user.role === "ADMIN" ? "/admin" : "/dashboard");
+
+    } else {
+      if (!firstName || !lastName) {
+        toast.error("Please fill in all fields");
+        return;
       }
-    } catch (error: any) {
-      toast.error(error?.data?.message || "Something went wrong");
+
+      // 👇 Add this confirmation
+      const confirmRegister = window.confirm(
+        "⚠️ We are currently upgrading our email service.\n\nPlease use the provided test account credentials for now."
+      );
+
+      if (!confirmRegister) return;
+
+      await register({ email, password, firstName, lastName }).unwrap();
+
+      toast.success("Registration successful! (Email verification temporarily disabled)");
+      handleClose();
+      router.push(`/check-email?email=${encodeURIComponent(email)}`);
     }
-  };
+
+  } catch (error: any) {
+    toast.error(error?.data?.message || "Something went wrong");
+  }
+};
 
   return (
     <AnimatePresence>

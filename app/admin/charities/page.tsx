@@ -2,24 +2,38 @@
 
 import { useState, useRef } from "react";
 import { motion } from "framer-motion";
-import { Heart, Plus, Loader2, Trash2, Image as ImageIcon, Upload, X } from "lucide-react";
+import { Heart, Plus, Loader2, Trash2, Image as ImageIcon, Upload, X, CalendarPlus } from "lucide-react";
 import { useGetAdminCharitiesQuery, useCreateCharityMutation, useUpdateCharityMutation, useDeleteCharityMutation } from "@/store/api/adminApi";
 import { useUpload } from "@/hooks/useUpload";
+import { apiSlice } from "@/store/api/apiSlice";
 import toast from "react-hot-toast";
+
+// Inject the create event mutation here so we can use it
+const eventsApi = apiSlice.injectEndpoints({
+  endpoints: (builder) => ({
+    createEvent: builder.mutation<any, any>({ query: (data) => ({ url: "/charity-events", method: "POST", body: data }), invalidatesTags: ["Charities"] }),
+  }),
+});
+const { useCreateEventMutation } = eventsApi;
 
 export default function AdminCharitiesPage() {
   const { data, isLoading } = useGetAdminCharitiesQuery();
   const [createCharity, { isLoading: creating }] = useCreateCharityMutation();
   const [updateCharity] = useUpdateCharityMutation();
   const [deleteCharity] = useDeleteCharityMutation();
+  const [createEvent, { isLoading: creatingEvent }] = useCreateEventMutation();
   const { upload, uploading } = useUpload();
 
   const [showCreate, setShowCreate] = useState(false);
-  const [updatingId, setUpdatingId] = useState<string | null>(null); // NEW: Tracks which charity is updating
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: "", slug: "", description: "", category: "",
     websiteUrl: "", isFeatured: false, logoUrl: "", coverImageUrl: "",
   });
+
+  // NEW: State for the Event Creation Modal
+  const [eventModalCharity, setEventModalCharity] = useState<{ id: string, name: string } | null>(null);
+  const [eventForm, setEventForm] = useState({ title: "", description: "", eventDate: "", location: "" });
 
   const logoInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
@@ -49,7 +63,7 @@ export default function AdminCharitiesPage() {
   };
 
   const handleUpdateImage = async (charityId: string, file: File, field: "logoUrl" | "coverImageUrl") => {
-    setUpdatingId(charityId); // Start loading for this specific charity
+    setUpdatingId(charityId);
     try {
       const url = await upload(file, "golf-charity/charities");
       await updateCharity({ id: charityId, data: { [field]: url } }).unwrap();
@@ -57,37 +71,51 @@ export default function AdminCharitiesPage() {
     } catch {
       toast.error("Failed to update image");
     } finally {
-      setUpdatingId(null); // Stop loading
+      setUpdatingId(null);
     }
   };
 
   const handleToggleFeatured = async (id: string, current: boolean) => {
-    setUpdatingId(id); // Start loading
+    setUpdatingId(id);
     try {
       await updateCharity({ id, data: { isFeatured: !current } }).unwrap();
       toast.success("Featured status updated!");
     } catch { 
       toast.error("Failed to update status"); 
     } finally {
-      setUpdatingId(null); // Stop loading
+      setUpdatingId(null);
     }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Deactivate this charity?")) return;
-    setUpdatingId(id); // Start loading
+    setUpdatingId(id);
     try { 
       await deleteCharity(id).unwrap(); 
       toast.success("Charity deactivated"); 
     } catch { 
       toast.error("Failed to deactivate"); 
     } finally {
-      setUpdatingId(null); // Stop loading
+      setUpdatingId(null);
+    }
+  };
+
+  // NEW: Handler to create an event for the specific charity
+  const handleCreateEvent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!eventModalCharity) return;
+    try {
+      await createEvent({ ...eventForm, charityId: eventModalCharity.id }).unwrap();
+      toast.success("Event created successfully!");
+      setEventModalCharity(null);
+      setEventForm({ title: "", description: "", eventDate: "", location: "" });
+    } catch (error: any) { 
+      toast.error(error?.data?.message || "Failed to create event"); 
     }
   };
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="max-w-6xl mx-auto relative">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between mb-8">
         <div>
           <h1 className="font-display font-bold text-3xl text-white mb-2">Charities</h1>
@@ -98,7 +126,7 @@ export default function AdminCharitiesPage() {
         </button>
       </motion.div>
 
-      {/* Create Form */}
+      {/* Create Charity Form (Unchanged) */}
       {showCreate && (
         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="glass rounded-2xl border border-white/[0.06] p-6 mb-8">
           <h2 className="font-display font-semibold text-lg text-white mb-4">New Charity</h2>
@@ -134,7 +162,6 @@ export default function AdminCharitiesPage() {
 
             {/* Image Uploads */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Logo Upload */}
               <div>
                 <label className="block text-xs text-dark-400 mb-1.5">Logo Image</label>
                 <input type="file" ref={logoInputRef} accept="image/*" className="hidden"
@@ -155,7 +182,6 @@ export default function AdminCharitiesPage() {
                 )}
               </div>
 
-              {/* Cover Upload */}
               <div>
                 <label className="block text-xs text-dark-400 mb-1.5">Cover Image</label>
                 <input type="file" ref={coverInputRef} accept="image/*" className="hidden"
@@ -200,7 +226,6 @@ export default function AdminCharitiesPage() {
           {charities.map((c: any) => (
             <div key={c.id} className="relative overflow-hidden glass rounded-2xl border border-white/[0.06] p-5 hover:border-white/[0.12] transition-all">
               
-              {/* NEW: Loading Overlay for individual row updates */}
               {updatingId === c.id && (
                 <div className="absolute inset-0 bg-dark-900/60 backdrop-blur-sm z-10 flex items-center justify-center">
                   <Loader2 className="w-8 h-8 animate-spin text-brand-400" />
@@ -208,7 +233,6 @@ export default function AdminCharitiesPage() {
               )}
 
               <div className="flex items-start gap-4">
-                {/* Logo */}
                 <div className="relative group">
                   <div className="w-16 h-16 rounded-xl bg-dark-800 border border-white/[0.06] overflow-hidden flex-shrink-0">
                     {c.logoUrl ? (
@@ -224,7 +248,6 @@ export default function AdminCharitiesPage() {
                   </label>
                 </div>
 
-                {/* Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap mb-1">
                     <h3 className="font-display font-semibold text-white">{c.name}</h3>
@@ -242,7 +265,6 @@ export default function AdminCharitiesPage() {
                   </div>
                 </div>
 
-                {/* Cover Image Upload */}
                 <div className="relative group flex-shrink-0 hidden md:block">
                   <div className="w-32 h-16 rounded-lg bg-dark-800 border border-white/[0.06] overflow-hidden">
                     {c.coverImageUrl ? (
@@ -258,13 +280,21 @@ export default function AdminCharitiesPage() {
                   </label>
                 </div>
 
-                {/* Actions */}
+                {/* Updated Actions Panel */}
                 <div className="flex items-center gap-1 flex-shrink-0">
+                  {/* NEW: Add Event Button */}
+                  <button onClick={() => setEventModalCharity({ id: c.id, name: c.name })}
+                    title="Add Event"
+                    className="p-2 text-dark-500 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors">
+                    <CalendarPlus className="w-4 h-4" />
+                  </button>
+
                   <button onClick={() => handleToggleFeatured(c.id, c.isFeatured)}
+                    title="Toggle Featured"
                     className={`p-2 rounded-lg transition-colors ${c.isFeatured ? "text-accent-400 hover:bg-accent-500/10" : "text-dark-600 hover:bg-white/[0.04] hover:text-white"}`}>
                     {c.isFeatured ? "★" : "☆"}
                   </button>
-                  <button onClick={() => handleDelete(c.id)} className="p-2 text-dark-500 hover:text-red-400 hover:bg-red-500/5 rounded-lg transition-colors">
+                  <button onClick={() => handleDelete(c.id)} title="Deactivate" className="p-2 text-dark-500 hover:text-red-400 hover:bg-red-500/5 rounded-lg transition-colors">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -273,6 +303,60 @@ export default function AdminCharitiesPage() {
           ))}
         </div>
       )}
+
+      {/* NEW: Create Event Modal */}
+      {eventModalCharity && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-dark-950/80 backdrop-blur-sm">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="glass rounded-3xl border border-white/[0.06] p-6 w-full max-w-lg shadow-2xl">
+            <div className="flex items-start justify-between mb-6">
+              <div>
+                <h2 className="font-display font-semibold text-xl text-white">Create Event</h2>
+                <p className="text-dark-400 text-sm mt-1">Hosting for <span className="text-brand-400 font-medium">{eventModalCharity.name}</span></p>
+              </div>
+              <button onClick={() => setEventModalCharity(null)} className="p-2 bg-white/[0.04] hover:bg-white/[0.1] rounded-full transition-colors">
+                <X className="w-4 h-4 text-white" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateEvent} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs text-dark-400 mb-1.5">Event Title</label>
+                  <input type="text" value={eventForm.title} onChange={(e) => setEventForm({ ...eventForm, title: e.target.value })} required 
+                    className="w-full px-4 py-3 bg-white/[0.04] border border-white/[0.08] rounded-xl text-sm text-white focus:outline-none focus:border-brand-500/50 transition-all" placeholder="Annual Golf Day" />
+                </div>
+                <div>
+                  <label className="block text-xs text-dark-400 mb-1.5">Date</label>
+                  <input type="date" value={eventForm.eventDate} onChange={(e) => setEventForm({ ...eventForm, eventDate: e.target.value })} required 
+                    className="w-full px-4 py-3 bg-white/[0.04] border border-white/[0.08] rounded-xl text-sm text-white focus:outline-none focus:border-brand-500/50 transition-all [color-scheme:dark]" />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-xs text-dark-400 mb-1.5">Location</label>
+                <input type="text" value={eventForm.location} onChange={(e) => setEventForm({ ...eventForm, location: e.target.value })} 
+                  className="w-full px-4 py-3 bg-white/[0.04] border border-white/[0.08] rounded-xl text-sm text-white focus:outline-none focus:border-brand-500/50 transition-all" placeholder="Pine Valley Golf Club" />
+              </div>
+
+              <div>
+                <label className="block text-xs text-dark-400 mb-1.5">Description</label>
+                <textarea value={eventForm.description} onChange={(e) => setEventForm({ ...eventForm, description: e.target.value })} rows={3} 
+                  className="w-full px-4 py-3 bg-white/[0.04] border border-white/[0.08] rounded-xl text-sm text-white focus:outline-none focus:border-brand-500/50 transition-all resize-none" placeholder="Details about the event..." />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-white/[0.06]">
+                <button type="button" onClick={() => setEventModalCharity(null)} className="px-4 py-2.5 text-dark-400 text-sm hover:text-white transition-colors">
+                  Cancel
+                </button>
+                <button type="submit" disabled={creatingEvent} className="btn-primary !py-2.5 !px-6 text-sm disabled:opacity-50 flex items-center justify-center min-w-[120px]">
+                  {creatingEvent ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create Event"}
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
     </div>
   );
 }

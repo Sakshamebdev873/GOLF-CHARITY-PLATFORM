@@ -7,12 +7,18 @@ import { Check, Loader2, CreditCard, Shield, Heart, Sparkles, Star, ArrowRight }
 import { useCreateCheckoutMutation, useConfirmCheckoutMutation, useGetMySubscriptionQuery } from "@/store/api/subscriptionApi";
 import { useGetCharitiesQuery } from "@/store/api/charitiesApi";
 import toast from "react-hot-toast";
+import { useGetMyCharitySelectionQuery } from "@/store/api/extrasApi";
 
 export default function SubscribePage() {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("session_id");
+  
+  // Added a specific state to handle the post-checkout loading phase
+  const [isConfirming, setIsConfirming] = useState(!!sessionId);
 
-  const { data: subData } = useGetMySubscriptionQuery();
+  const { data: selectionData } = useGetMyCharitySelectionQuery();
+  // Destructured refetch to force an update after successful checkout
+  const { data: subData, refetch: refetchSubscription, isLoading: loadingSub } = useGetMySubscriptionQuery();
   const { data: charitiesData, isLoading: loadingCharities } = useGetCharitiesQuery();
   const [createCheckout, { isLoading: checkingOut }] = useCreateCheckoutMutation();
   const [confirmCheckout] = useConfirmCheckoutMutation();
@@ -26,22 +32,34 @@ export default function SubscribePage() {
   const activePlan = subData?.data?.plan; // Usually "MONTHLY" or "YEARLY"
   const isHighestTier = activePlan === "YEARLY";
 
+  // Handle post-checkout confirmation
   useEffect(() => {
-    if (sessionId && !isSubscribed) {
-      confirmCheckout({ sessionId })
-        .unwrap()
-        .then(() => {
-          toast.success("Subscription activated! 🎉");
-          window.history.replaceState({}, "", "/dashboard/subscribe");
-        })
-        .catch((err) => {
-          if (!err?.data?.message?.includes("already")) {
-            toast.error(err?.data?.message || "Failed to confirm");
-          }
-        });
-    }
-  }, [sessionId, isSubscribed, confirmCheckout]);
+    if (!sessionId) return;
 
+    const processConfirmation = async () => {
+      try {
+        await confirmCheckout({ sessionId }).unwrap();
+        toast.success("Subscription successfully updated! 🎉");
+        // Force the subscription query to fetch the newest data
+        await refetchSubscription(); 
+      } catch (err: any) {
+        if (!err?.data?.message?.includes("already")) {
+          toast.error(err?.data?.message || "Failed to confirm payment");
+        }
+      } finally {
+        // Clean up the URL
+        window.history.replaceState({}, "", "/dashboard/subscribe");
+        // Add a small artificial delay so the user doesn't see a jarring flash of UI
+        setTimeout(() => {
+          setIsConfirming(false);
+        }, 1500);
+      }
+    };
+
+    processConfirmation();
+  }, [sessionId, confirmCheckout, refetchSubscription]);
+
+  // Handler for NEW subscriptions
   const handleSubscribe = async () => {
     if (!charityId) { toast.error("Please select a charity"); return; }
     try {
@@ -51,6 +69,45 @@ export default function SubscribePage() {
       toast.error(error?.data?.message || "Checkout failed");
     }
   };
+
+  // Handler specifically for UPGRADING to yearly
+  const handleUpgrade = async () => {
+    try {
+      // Pull their existing charity settings from their current subscription
+      const existingCharityId = selectionData?.data?.charityId || charityId;
+      const existingContribution = subData?.data?.charityPercentage || contribution;
+
+      if (!existingCharityId) {
+        toast.error("Please select a charity before upgrading.");
+        return;
+      }
+
+      const result = await createCheckout({ 
+        plan: "YEARLY", // Hardcoded to YEARLY for the upgrade button
+        charityId: existingCharityId, 
+        charityPercentage: existingContribution 
+      }).unwrap();
+      
+      window.location.href = result.data.url;
+    } catch (error: any) {
+      toast.error(error?.data?.message || "Upgrade checkout failed");
+    }
+  };
+
+  // ------------------------------------------------------------------
+  // LOADING STATE (Shows during initial load and post-checkout)
+  // ------------------------------------------------------------------
+  if (isConfirming || loadingSub || loadingCharities) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center">
+        <Loader2 className="w-12 h-12 animate-spin text-brand-500 mb-6" />
+        <h2 className="font-display font-semibold text-2xl text-white mb-2">
+          {isConfirming ? "Securing your subscription..." : "Loading..."}
+        </h2>
+        <p className="text-dark-400">Please wait while we sync your details.</p>
+      </div>
+    );
+  }
 
   // ------------------------------------------------------------------
   // ALREADY SUBSCRIBED STATE
@@ -80,7 +137,7 @@ export default function SubscribePage() {
               {activePlan || "Active"}
             </p>
             <p className="text-dark-400 mt-2 text-sm">
-              Renews on {new Date(subData.data.currentPeriodEnd).toLocaleDateString("en-IN")}
+              Renews on {subData?.data?.currentPeriodEnd ? new Date(subData.data.currentPeriodEnd).toLocaleDateString("en-IN") : "---"}
             </p>
           </div>
 
@@ -96,12 +153,17 @@ export default function SubscribePage() {
               <p className="text-dark-300 text-sm mb-4">
                 Upgrade to our Yearly plan and get over 2 months free while maximizing your charity contributions.
               </p>
-              {/* Note: Update this onClick if you have a specific customer portal URL or upgrade API endpoint */}
+              
               <button 
-                onClick={() => toast.success("Redirecting to billing portal...")}
-                className="w-full py-2.5 bg-brand-500 text-dark-950 font-bold rounded-xl hover:bg-brand-400 transition-colors flex items-center justify-center gap-2"
+                onClick={handleUpgrade}
+                disabled={checkingOut}
+                className="w-full py-2.5 bg-brand-500 text-dark-950 font-bold rounded-xl hover:bg-brand-400 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Upgrade to Yearly <ArrowRight className="w-4 h-4" />
+                {checkingOut ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <>Upgrade to Yearly <ArrowRight className="w-4 h-4" /></>
+                )}
               </button>
             </div>
           )}
@@ -137,7 +199,7 @@ export default function SubscribePage() {
         <p className="text-dark-400 text-base sm:text-lg">All plans include every feature. Just pick your billing cycle.</p>
       </motion.div>
 
-      {/* Plan Toggle - Made Responsive */}
+      {/* Plan Toggle */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
         className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8 max-w-lg mx-auto">
         <button onClick={() => setPlan("MONTHLY")}
@@ -178,7 +240,7 @@ export default function SubscribePage() {
           </div>
         )}
 
-        {/* Contribution Slider - Made Responsive */}
+        {/* Contribution Slider */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-4 pt-4 border-t border-white/[0.06]">
           <span className="text-sm text-dark-400 whitespace-nowrap">Your Contribution:</span>
           <div className="flex items-center gap-4 flex-1">
@@ -188,7 +250,7 @@ export default function SubscribePage() {
         </div>
       </motion.div>
 
-      {/* Features - Made Responsive */}
+      {/* Features */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
         className="glass rounded-2xl border border-white/[0.06] p-4 sm:p-6 mb-8">
         <h3 className="font-display font-semibold text-white mb-4">What's Included</h3>

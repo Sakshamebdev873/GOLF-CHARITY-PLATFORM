@@ -1,7 +1,8 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { BarChart3, Ticket, Heart, Gift, Trophy, ArrowUpRight, CreditCard } from "lucide-react";
+import { BarChart3, Ticket, Heart, Gift, Trophy, ArrowUpRight, CreditCard, Loader2 } from "lucide-react";
 import { useAppSelector } from "@/store/store";
 import { useGetProfileQuery } from "@/store/api/authApi";
 import { useGetMyScoresQuery } from "@/store/api/scoreApi";
@@ -11,10 +12,29 @@ import Link from "next/link";
 
 export default function DashboardPage() {
   const { user } = useAppSelector((s) => s.auth);
-  const { data: profile } = useGetProfileQuery();
-  const { data: scoresData } = useGetMyScoresQuery();
-  const { data: entriesData } = useGetMyEntriesQuery();
-  const { data: winningsData } = useGetMyWinningsQuery();
+  
+  // Extract both data and isLoading from each query
+  const { data: profile, isLoading: loadingProfile } = useGetProfileQuery();
+  const { data: scoresData, isLoading: loadingScores } = useGetMyScoresQuery();
+  const { data: entriesData, isLoading: loadingEntries } = useGetMyEntriesQuery();
+  const { data: winningsData, isLoading: loadingWinnings } = useGetMyWinningsQuery();
+
+  // Local state to manage the artificial minimum load time
+  const [minLoadTimeMet, setMinLoadTimeMet] = useState(false);
+
+  // Force the loader to show for at least 600ms to prevent UI flickering if the cache is fast
+  useEffect(() => {
+    const timer = setTimeout(() => setMinLoadTimeMet(true), 600);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Determine if we should show the loading screen
+  const isGlobalLoading = 
+    loadingProfile || 
+    loadingScores || 
+    loadingEntries || 
+    loadingWinnings || 
+    !minLoadTimeMet;
 
   const sub = profile?.data?.subscription;
   const scores = scoresData?.data || [];
@@ -34,8 +54,25 @@ export default function DashboardPage() {
     emerald: "from-emerald-500 to-green-300",
   };
 
+  // ------------------------------------------------------------------
+  // LOADING STATE
+  // ------------------------------------------------------------------
+  if (isGlobalLoading) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center">
+        <Loader2 className="w-10 h-10 animate-spin text-brand-500 mb-6" />
+        <h2 className="font-display font-semibold text-xl text-white mb-2">
+          Loading Dashboard...
+        </h2>
+        <p className="text-dark-400 text-sm">Gathering your scores and stats.</p>
+      </div>
+    );
+  }
+
+  // ------------------------------------------------------------------
+  // MAIN DASHBOARD
+  // ------------------------------------------------------------------
   return (
-    // Added px-4 sm:px-6 lg:px-8 for mobile padding so it doesn't touch screen edges, and py-6 for vertical spacing
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
       
       {/* Welcome */}
@@ -65,7 +102,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Recent Scores */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="glass rounded-2xl border border-white/[0.06] p-4 sm:p-6 mb-6 sm:mb-8">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass rounded-2xl border border-white/[0.06] p-4 sm:p-6 mb-6 sm:mb-8">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
           <h2 className="font-display font-semibold text-lg text-white">Your Latest Scores</h2>
           <Link href="/dashboard/scores" className="text-brand-400 text-sm hover:text-brand-300 transition-colors">Manage Scores →</Link>
@@ -78,7 +115,6 @@ export default function DashboardPage() {
             <Link href="/dashboard/scores" className="text-brand-400 text-sm mt-2 inline-block hover:text-brand-300">Enter your first score →</Link>
           </div>
         ) : (
-          // Changed from flex to a responsive grid: 2 cols on mobile, 3 cols on small tablets, 5 cols on large desktop
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
             {scores.map((score: any) => (
               <div key={score.id} className="bg-white/[0.03] rounded-xl p-3 sm:p-4 text-center border border-white/[0.06]">
@@ -99,7 +135,7 @@ export default function DashboardPage() {
       </motion.div>
 
       {/* Quick Actions */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <Link href="/dashboard/scores" className="glass rounded-2xl p-5 sm:p-6 border border-white/[0.06] hover:border-brand-500/30 transition-all group">
           <BarChart3 className="w-7 h-7 sm:w-8 sm:h-8 text-brand-400 mb-3 group-hover:scale-110 transition-transform" />
           <h3 className="font-display font-semibold text-white mb-1">Enter Score</h3>

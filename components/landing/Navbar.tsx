@@ -5,8 +5,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Trophy, LogOut, LayoutDashboard } from "lucide-react";
 import { useAppSelector, useAppDispatch } from "@/store/store";
 import { logout } from "@/store/slices/authSlice";
-import { openAuthModal, toggleMobileMenu, closeMobileMenu } from "@/store/slices/uiSlice";
+import { toggleMobileMenu, closeMobileMenu } from "@/store/slices/uiSlice";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const navLinks = [
   { name: "How It Works", href: "#how-it-works" },
@@ -17,6 +18,8 @@ const navLinks = [
 
 export default function Navbar() {
   const dispatch = useAppDispatch();
+  const router = useRouter();
+  
   const { isAuthenticated } = useAppSelector((s) => s.auth);
   const { mobileMenuOpen } = useAppSelector((s) => s.ui);
   const [scrolled, setScrolled] = useState(false);
@@ -97,18 +100,18 @@ export default function Navbar() {
               </div>
             ) : (
               <>
-                <button
-                  onClick={() => dispatch(openAuthModal("login"))}
+                <Link
+                  href="/login"
                   className="px-5 py-2.5 text-dark-300 hover:text-white text-sm font-medium transition-colors"
                 >
                   Log In
-                </button>
-                <button
-                  onClick={() => dispatch(openAuthModal("register"))}
+                </Link>
+                <Link
+                  href="/register"
                   className="px-6 py-2.5 bg-brand-500 text-dark-950 text-sm font-semibold rounded-xl hover:bg-brand-400 hover:shadow-[0_0_20px_rgba(34,197,94,0.3)] transition-all duration-300"
                 >
                   Get Started
-                </button>
+                </Link>
               </>
             )}
           </div>
@@ -178,13 +181,13 @@ export default function Navbar() {
                 ) : (
                   <>
                     <button 
-                      onClick={() => { dispatch(openAuthModal("login")); dispatch(closeMobileMenu()); }} 
+                      onClick={() => { router.push('/login'); dispatch(closeMobileMenu()); }} 
                       className="w-full py-3.5 bg-white/[0.04] border border-white/[0.06] text-white text-base font-medium rounded-xl text-center hover:bg-white/[0.08] transition-all"
                     >
                       Log In
                     </button>
                     <button 
-                      onClick={() => { dispatch(openAuthModal("register")); dispatch(closeMobileMenu()); }} 
+                      onClick={() => { router.push('/register'); dispatch(closeMobileMenu()); }} 
                       className="w-full py-3.5 bg-brand-500 text-dark-950 text-base font-semibold rounded-xl text-center hover:bg-brand-400 hover:shadow-[0_0_20px_rgba(34,197,94,0.3)] transition-all"
                     >
                       Get Started

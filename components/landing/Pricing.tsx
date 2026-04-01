@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Check, Sparkles, IndianRupee } from "lucide-react";
-import { useAppDispatch } from "@/store/store";
+import { useAppDispatch, useAppSelector } from "@/store/store";
 import { openAuthModal } from "@/store/slices/uiSlice";
 
 const features = [
@@ -18,11 +19,24 @@ const features = [
 export default function Pricing() {
   const [yearly, setYearly] = useState(false);
   const dispatch = useAppDispatch();
+  const router = useRouter();
+  
+  // Pull the user from your auth state
+  const { user } = useAppSelector((state) => state.auth);
 
   const monthlyPrice = 199;
   const yearlyPrice = 1999;
   const yearlyMonthly = Math.round(yearlyPrice / 12);
   const savings = monthlyPrice * 12 - yearlyPrice;
+
+  // Handle the button click based on auth status
+  const handleSubscribeClick = () => {
+    if (user) {
+      router.push("/dashboard/subscribe");
+    } else {
+      router.push('/login')
+    }
+  };
 
   return (
     <section id="pricing" className="relative py-32 section-padding">
@@ -114,8 +128,9 @@ export default function Pricing() {
               )}
               {!yearly && <div className="mb-6" />}
 
+              {/* Updated Button */}
               <button
-                onClick={() => dispatch(openAuthModal("register"))}
+                onClick={handleSubscribeClick}
                 className="btn-primary w-full text-center text-lg"
               >
                 Subscribe Now
