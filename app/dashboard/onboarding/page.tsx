@@ -29,9 +29,9 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-dark-950 flex items-center justify-center py-16 relative noise-bg">
-      <div className="absolute top-1/3 left-1/4 w-[500px] h-[500px] bg-rose-500/[0.05] rounded-full blur-[120px]" />
-      <div className="absolute bottom-1/3 right-1/4 w-[400px] h-[400px] bg-brand-500/[0.04] rounded-full blur-[100px]" />
+    <div className="min-h-screen  flex items-center justify-center py-16 relative noise-bg">
+      <div className="absolute top-1/3 left-1/4 w-[500px] h-[500px]  rounded-full blur-[120px]" />
+      <div className="absolute bottom-1/3 right-1/4 w-[400px] h-[400px]  rounded-full blur-[100px]" />
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-3xl relative z-10">
         {/* Header */}

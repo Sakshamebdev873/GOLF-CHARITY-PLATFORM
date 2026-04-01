@@ -24,7 +24,7 @@ export default function DashboardPage() {
     { label: "Subscription", value: sub?.status === "ACTIVE" ? sub.plan : "Inactive", icon: CreditCard, color: "brand", href: "/dashboard/settings" },
     { label: "Scores Entered", value: `${scores.length}/5`, icon: BarChart3, color: "blue", href: "/dashboard/scores" },
     { label: "Draw Entries", value: entriesData?.data?.length || 0, icon: Ticket, color: "amber", href: "/dashboard/draws" },
-    { label: "Total Won", value: `£${(totalWon / 100).toFixed(2)}`, icon: Gift, color: "emerald", href: "/dashboard/winnings" },
+    { label: "Total Won", value: `₹${(totalWon/100).toFixed(2)}`, icon: Gift, color: "emerald", href: "/dashboard/winnings" },
   ];
 
   const colorMap: Record<string, string> = {

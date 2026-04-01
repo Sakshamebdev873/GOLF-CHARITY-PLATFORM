@@ -4,7 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { 
   Trophy, LayoutDashboard, BarChart3, Ticket, Heart, Gift, 
-  CreditCard, Bell, Settings, LogOut, ChevronLeft, ChevronRight, Menu, X 
+  CreditCard, Bell, Settings, LogOut, ChevronLeft, ChevronRight, Menu, X, 
+  SubscriptIcon
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/store";
@@ -19,11 +20,10 @@ const navItems = [
   { name: "Winnings", href: "/dashboard/winnings", icon: Gift },
   { name: "Donations", href: "/dashboard/donations", icon: CreditCard },
   { name: "Notifications", href: "/dashboard/notifications", icon: Bell }, // Wait, Bell imported as Notifications? Fixing to Bell below.
-  { name: "Notifications", href: "/dashboard/notifications", icon: Bell },
+  { name: "Subscription", href: "/dashboard/subscribe", icon: SubscriptIcon },
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 
-// Cleaned up navItems array (removed duplicate)
 const cleanNavItems = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "My Scores", href: "/dashboard/scores", icon: BarChart3 },
@@ -32,6 +32,7 @@ const cleanNavItems = [
   { name: "Winnings", href: "/dashboard/winnings", icon: Gift },
   { name: "Donations", href: "/dashboard/donations", icon: CreditCard },
   { name: "Notifications", href: "/dashboard/notifications", icon: Bell },
+  { name: "Subscription", href: "/dashboard/subscribe", icon: SubscriptIcon }, // Add this line
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 

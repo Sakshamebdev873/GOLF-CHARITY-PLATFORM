@@ -73,7 +73,7 @@ export default function AdminDashboardPage() {
                   <p className="text-sm font-medium text-white">{d.monthYear}</p>
                   <p className="text-xs text-dark-500">{d._count?.entries || 0} entries · {d._count?.winners || 0} winners</p>
                 </div>
-                <p className="text-sm font-semibold text-brand-400">£{((d.totalPoolCents || 0) / 100).toFixed(2)}</p>
+                <p className="text-sm font-semibold text-brand-400">₹{((d.totalPoolCents || 0) / 100).toFixed(2)}</p>
               </div>
             ))}
           </div>

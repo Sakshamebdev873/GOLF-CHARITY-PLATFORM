@@ -293,7 +293,7 @@ export default function DrawsPage() {
                         <div className="text-right">
                           <p className="text-dark-400 text-xs">Prize Pool</p>
                           <p className="font-display font-bold text-xl text-brand-400">
-                            £{((draw.totalPoolCents || 0) / 100).toFixed(2)}
+                            ₹{((draw.totalPoolCents || 0) / 100).toFixed(2)}
                           </p>
                         </div>
                       </div>

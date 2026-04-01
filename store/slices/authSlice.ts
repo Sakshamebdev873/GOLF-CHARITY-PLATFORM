@@ -15,10 +15,23 @@ interface AuthState {
   isAuthenticated: boolean;
 }
 
+// Rehydrate user from cookie on page load
+function getSavedUser(): User | null {
+  try {
+    const saved = Cookies.get("user");
+    return saved ? JSON.parse(saved) : null;
+  } catch {
+    return null;
+  }
+}
+
+const token = Cookies.get("token") || null;
+const user = getSavedUser();
+
 const initialState: AuthState = {
-  user: null,
-  token: Cookies.get("token") || null,
-  isAuthenticated: !!Cookies.get("token"),
+  user,
+  token,
+  isAuthenticated: !!token,
 };
 
 const authSlice = createSlice({
@@ -30,15 +43,18 @@ const authSlice = createSlice({
       state.token = action.payload.token;
       state.isAuthenticated = true;
       Cookies.set("token", action.payload.token, { expires: 7 });
+      Cookies.set("user", JSON.stringify(action.payload.user), { expires: 7 });
     },
     setUser: (state, action: PayloadAction<User>) => {
       state.user = action.payload;
+      Cookies.set("user", JSON.stringify(action.payload), { expires: 7 });
     },
     logout: (state) => {
       state.user = null;
       state.token = null;
       state.isAuthenticated = false;
       Cookies.remove("token");
+      Cookies.remove("user");
     },
   },
 });

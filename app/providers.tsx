@@ -3,6 +3,7 @@
 import { Provider } from "react-redux";
 import { store } from "@/store/store";
 import { Toaster } from "react-hot-toast";
+import AuthProvider from "@/components/AuthProvider";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -21,7 +22,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
           error: { iconTheme: { primary: "#ef4444", secondary: "#020617" } },
         }}
       />
-      {children}
+      <AuthProvider>{children}</AuthProvider>
     </Provider>
   );
 }

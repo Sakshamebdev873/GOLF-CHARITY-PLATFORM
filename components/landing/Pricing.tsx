@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Check, Sparkles } from "lucide-react";
+import { Check, Sparkles, IndianRupee } from "lucide-react";
 import { useAppDispatch } from "@/store/store";
 import { openAuthModal } from "@/store/slices/uiSlice";
 
@@ -19,10 +19,10 @@ export default function Pricing() {
   const [yearly, setYearly] = useState(false);
   const dispatch = useAppDispatch();
 
-  const monthlyPrice = 9.99;
-  const yearlyPrice = 99.90;
-  const yearlyMonthly = (yearlyPrice / 12).toFixed(2);
-  const savings = ((monthlyPrice * 12 - yearlyPrice)).toFixed(2);
+  const monthlyPrice = 199;
+  const yearlyPrice = 1999;
+  const yearlyMonthly = Math.round(yearlyPrice / 12);
+  const savings = monthlyPrice * 12 - yearlyPrice;
 
   return (
     <section id="pricing" className="relative py-32 section-padding">
@@ -63,15 +63,9 @@ export default function Pricing() {
           </span>
           <button
             onClick={() => setYearly(!yearly)}
-            className={`relative w-14 h-7 rounded-full transition-colors duration-300 ${
-              yearly ? "bg-brand-500" : "bg-dark-700"
-            }`}
+            className={`relative w-14 h-7 rounded-full transition-colors duration-300 ${yearly ? "bg-brand-500" : "bg-dark-700"}`}
           >
-            <span
-              className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-transform duration-300 ${
-                yearly ? "translate-x-7" : "translate-x-0"
-              }`}
-            />
+            <span className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-transform duration-300 ${yearly ? "translate-x-7" : "translate-x-0"}`} />
           </button>
           <span className={`text-sm font-medium transition-colors ${yearly ? "text-white" : "text-dark-500"}`}>
             Yearly
@@ -82,7 +76,7 @@ export default function Pricing() {
               animate={{ opacity: 1, x: 0 }}
               className="text-xs font-bold text-brand-400 bg-brand-500/10 px-3 py-1 rounded-full border border-brand-500/20"
             >
-              Save £{savings}
+              Save ₹{savings}
             </motion.span>
           )}
         </motion.div>
@@ -95,7 +89,6 @@ export default function Pricing() {
           transition={{ duration: 0.7 }}
           className="glass rounded-[2rem] p-10 md:p-14 border border-brand-500/20 glow-border relative overflow-hidden"
         >
-          {/* Decorative */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-brand-500/[0.06] rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2" />
 
           <div className="relative grid md:grid-cols-2 gap-12 items-center">
@@ -103,24 +96,22 @@ export default function Pricing() {
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-500/10 border border-brand-500/20 mb-6">
                 <Sparkles className="w-3.5 h-3.5 text-brand-400" />
-                <span className="text-xs font-semibold text-brand-400 uppercase tracking-wider">
-                  Full Access
-                </span>
+                <span className="text-xs font-semibold text-brand-400 uppercase tracking-wider">Full Access</span>
               </div>
 
-              <div className="flex items-baseline gap-2 mb-2">
+              <div className="flex items-baseline gap-1 mb-2">
+                <span className="text-dark-400 text-2xl">₹</span>
                 <span className="font-display font-bold text-6xl md:text-7xl text-white">
-                  £{yearly ? yearlyMonthly : monthlyPrice.toFixed(2)}
+                  {yearly ? yearlyMonthly : monthlyPrice}
                 </span>
                 <span className="text-dark-400 text-lg">/mo</span>
               </div>
 
               {yearly && (
                 <p className="text-dark-500 text-sm mb-6">
-                  Billed £{yearlyPrice.toFixed(2)} per year
+                  Billed ₹{yearlyPrice.toLocaleString("en-IN")} per year
                 </p>
               )}
-
               {!yearly && <div className="mb-6" />}
 
               <button
@@ -156,8 +147,7 @@ export default function Pricing() {
               <div className="pt-6 mt-6 border-t border-white/[0.06]">
                 <p className="text-dark-400 text-xs leading-relaxed">
                   At least <span className="text-brand-400 font-semibold">10% of your subscription</span>{" "}
-                  goes directly to your chosen charity. You can increase this
-                  percentage anytime from your dashboard.
+                  goes directly to your chosen charity. You can increase this percentage anytime from your dashboard.
                 </p>
               </div>
             </div>

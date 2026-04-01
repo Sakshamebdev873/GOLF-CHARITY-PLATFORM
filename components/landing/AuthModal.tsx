@@ -50,11 +50,10 @@ export default function AuthModal() {
         router.push(result.data.user.role === "ADMIN" ? "/admin" : "/dashboard");
       } else {
         if (!firstName || !lastName) { toast.error("Please fill in all fields"); return; }
-        const result = await register({ email, password, firstName, lastName }).unwrap();
-        dispatch(setCredentials({ user: result.data.user, token: result.data.token }));
-        toast.success("Account created!");
+        await register({ email, password, firstName, lastName }).unwrap();
+        toast.success("Check your email to verify your account!");
         handleClose();
-        router.push("/dashboard/onboarding");
+        router.push(`/check-email?email=${encodeURIComponent(email)}`);
       }
     } catch (error: any) {
       toast.error(error?.data?.message || "Something went wrong");

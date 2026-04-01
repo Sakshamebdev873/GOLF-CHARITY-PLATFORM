@@ -23,10 +23,10 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const result = await register({ email, password, firstName, lastName }).unwrap();
-      dispatch(setCredentials({ user: result.data.user, token: result.data.token }));
-      toast.success("Account created! Welcome aboard.");
-      router.push("/dashboard/onboarding");
+      await register({ email, password, firstName, lastName }).unwrap();
+      // DON'T login — redirect to check email page
+      toast.success("Account created! Check your email to verify.");
+      router.push(`/check-email?email=${encodeURIComponent(email)}`);
     } catch (error: any) {
       toast.error(error?.data?.message || "Registration failed");
     }

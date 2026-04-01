@@ -26,6 +26,12 @@ export default function LoginPage() {
       toast.success("Welcome back!");
       router.push(result.data.user.role === "ADMIN" ? "/admin" : "/dashboard");
     } catch (error: any) {
+      // Handle unverified email
+      if (error?.data?.message === "EMAIL_NOT_VERIFIED") {
+        toast.error("Please verify your email first");
+        router.push(`/check-email?email=${encodeURIComponent(email)}`);
+        return;
+      }
       toast.error(error?.data?.message || "Invalid credentials");
     }
   };
