@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { CheckCircle, XCircle, Loader2, Trophy } from "lucide-react";
@@ -9,7 +9,8 @@ import { useAppDispatch } from "@/store/store";
 import { setCredentials } from "@/store/slices/authSlice";
 import Link from "next/link";
 
-export default function VerifyEmailPage() {
+// 1. Move all logic and UI into this content component
+function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -34,7 +35,7 @@ export default function VerifyEmailPage() {
         setStatus("error");
         setErrorMsg(err?.data?.message || "Verification failed");
       });
-  }, [token]);
+  }, [token, verifyEmail, dispatch, router]);
 
   return (
     <div className="min-h-screen bg-dark-950 flex items-center justify-center px-6 noise-bg">
@@ -88,5 +89,18 @@ export default function VerifyEmailPage() {
         )}
       </motion.div>
     </div>
+  );
+}
+
+// 2. Export the default page wrapped in Suspense
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-dark-950 flex items-center justify-center">
+        <Loader2 className="w-16 h-16 animate-spin text-brand-400" />
+      </div>
+    }>
+      <VerifyEmailContent />
+    </Suspense>
   );
 }

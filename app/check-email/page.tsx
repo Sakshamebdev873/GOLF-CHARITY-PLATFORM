@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { motion } from "framer-motion";
 import { Mail, Loader2, ArrowLeft, RefreshCw } from "lucide-react";
 import { useSearchParams } from "next/navigation";
@@ -8,7 +8,8 @@ import { useResendVerificationMutation } from "@/store/api/authApi";
 import Link from "next/link";
 import toast from "react-hot-toast";
 
-export default function CheckEmailPage() {
+// 1. Move all the actual logic into an internal "Content" component
+function CheckEmailContent() {
   const searchParams = useSearchParams();
   const email = searchParams.get("email") || "";
   const [resend, { isLoading }] = useResendVerificationMutation();
@@ -76,5 +77,18 @@ export default function CheckEmailPage() {
         </Link>
       </motion.div>
     </div>
+  );
+}
+
+// 2. Export a default Page component that wraps the Content in Suspense
+export default function CheckEmailPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-dark-950 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-brand-400" />
+      </div>
+    }>
+      <CheckEmailContent />
+    </Suspense>
   );
 }

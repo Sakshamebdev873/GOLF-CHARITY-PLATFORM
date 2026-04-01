@@ -4,7 +4,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { 
   Trophy, LayoutDashboard, Users, Ticket, Heart, Gift, 
-  BarChart3, Settings, LogOut, Shield, Menu, X 
+  BarChart3, Settings, LogOut, Shield, Menu, X, 
+  Calendar
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/store";
@@ -18,6 +19,7 @@ const navItems = [
   { name: "Winners", href: "/admin/winners", icon: Gift },
   { name: "Reports", href: "/admin/reports", icon: BarChart3 },
   { name: "Config", href: "/admin/config", icon: Settings },
+  { name: "Events", href: "/admin/charity-events", icon: Calendar },
 ];
 
 export default function AdminSidebar() {
